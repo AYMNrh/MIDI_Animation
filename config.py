@@ -147,7 +147,7 @@ class Config:
     start_playing_delay = 3000
     max_notes: Optional[int] = 1000
     bounce_min_spacing: Optional[float] = 30
-    square_speed: Optional[int] = 600
+    square_speed: Optional[int] = 700
     volume: Optional[int] = 70
     music_offset: Optional[int] = 0
     direction_change_chance: Optional[int] = 30

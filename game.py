@@ -249,6 +249,9 @@ class Game:
         if not self.camera.locked_on_square:
             screen.blit(self.camera_ctrl_text, (10, 10))
 
+        # Draw the world (including animated pegs)
+        self.world.draw(screen)
+
     def handle_event(self, event: pygame.event.Event):
         if not self.active:
             return False

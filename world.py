@@ -23,6 +23,8 @@ class World:
         self.square = Square()
         self.scorekeeper = Scorekeeper(self)
         self.colors = []           
+        self.peg_animations = {}  # Track animation state for each peg
+        self.peg_glow_duration = 0.3  # Duration of glow/size animation in seconds
 
     def update_time(self) -> None:
         self.time = get_current_time() - self.start_time
@@ -44,6 +46,11 @@ class World:
                 before = square.dir.copy()
                 square.obey_bounce(current_bounce)
                 changed = square.dir.copy()
+                
+                # Add the hit peg to animations
+                hit_rect = current_bounce.get_collision_rect()
+                rect_index = self.rectangles.index(hit_rect)
+                self.peg_animations[rect_index] = self.time
                 
                 # Get the current color index and next color
                 current_color_index = round((square.dir_x + 1) / 2 + square.dir_y + 1)
@@ -220,3 +227,37 @@ class World:
         # Setting random colors for the generated pegs
         self.colors = [random.choice([(224, 50, 50), (80, 210, 100), (230, 220, 50), (174, 170, 210), (245, 77, 247), (255, 153, 0)]) for _ in self.future_bounces]
         return safe_areas
+
+    def draw(self, screen: pygame.Surface):
+        # Draw rectangles with animations
+        for i, rect in enumerate(self.rectangles):
+            if i in self.peg_animations:
+                # Calculate animation progress
+                time_since_hit = self.time - self.peg_animations[i]
+                if time_since_hit > self.peg_glow_duration:
+                    del self.peg_animations[i]
+                    continue
+                    
+                # Animation curve (0 to 1 to 0)
+                progress = 1 - abs(time_since_hit / (self.peg_glow_duration/2) - 1)
+                
+                # Scale the rectangle
+                scale_factor = 1 + (progress * 0.3)  # Max 30% bigger
+                scaled_rect = rect.copy()
+                scaled_rect.inflate_ip(
+                    rect.width * (scale_factor - 1),
+                    rect.height * (scale_factor - 1)
+                )
+                
+                # Draw glow effect
+                glow_color = self.colors[i]
+                glow_surf = pygame.Surface((scaled_rect.width + 20, scaled_rect.height + 20), pygame.SRCALPHA)
+                pygame.draw.rect(glow_surf, (*glow_color, int(255 * progress * 0.7)), 
+                               glow_surf.get_rect().inflate(-10, -10), border_radius=4)
+                screen.blit(glow_surf, scaled_rect.move(-10, -10))
+                
+                # Draw the peg
+                pygame.draw.rect(screen, self.colors[i], scaled_rect)
+            else:
+                # Draw normal peg
+                pygame.draw.rect(screen, self.colors[i], rect)
