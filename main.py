@@ -28,7 +28,7 @@ def main():
     # pygame and other boilerplate
     n_frames = 0
     pygame.mixer.music.load("./assets/mainmenu.mp3")
-    pygame.mixer.music.set_volume(Config.volume / 100)
+    pygame.mixer.music.set_volume(Config.volume / 1000)
     pygame.mixer.music.play(loops=-1, start=2)
 
     clock = pygame.time.Clock()
@@ -133,7 +133,7 @@ def main():
                         menu.active = True
                         if song_selector.selected_index + 1:
                             pygame.mixer.music.load("./assets/mainmenu.mp3")
-                            pygame.mixer.music.set_volume(Config.volume / 100)
+                            pygame.mixer.music.set_volume(Config.volume / 1000)
                             pygame.mixer.music.play(loops=-1, start=2)
                             song_selector.selected_index = -1
                         continue
@@ -141,7 +141,7 @@ def main():
                         game.active = False
                         song_selector.active = True
                         pygame.mixer.music.load("./assets/mainmenu.mp3")
-                        pygame.mixer.music.set_volume(Config.volume / 100)
+                        pygame.mixer.music.set_volume(Config.volume / 1000)
                         pygame.mixer.music.play(loops=-1, start=2)
                         song_selector.selected_index = -1
                         continue
@@ -181,7 +181,7 @@ def main():
                     menu.active = True
                     if song_selector.selected_index + 1:
                         pygame.mixer.music.load("./assets/mainmenu.mp3")
-                        pygame.mixer.music.set_volume(Config.volume / 100)
+                        pygame.mixer.music.set_volume(Config.volume / 1000)
                         pygame.mixer.music.play(loops=-1, start=2)
                         song_selector.selected_index = -1
                     continue
@@ -197,7 +197,7 @@ def main():
                         game.active = False
                         song_selector.active = True
                     pygame.mixer.music.load("./assets/mainmenu.mp3")
-                    pygame.mixer.music.set_volume(Config.volume / 100)
+                    pygame.mixer.music.set_volume(Config.volume / 1000)
                     pygame.mixer.music.play(loops=-1, start=2)
 
             # handle config page events

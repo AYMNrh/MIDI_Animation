@@ -6,6 +6,7 @@ from time import time as get_current_time
 from scorekeeper import Scorekeeper
 import random
 import pygame
+import math
 
 
 class World:
@@ -23,8 +24,6 @@ class World:
         self.square = Square()
         self.scorekeeper = Scorekeeper(self)
         self.colors = []           
-        self.peg_animations = {}  # Track animation state for each peg
-        self.peg_glow_duration = 0.3  # Duration of glow/size animation in seconds
 
     def update_time(self) -> None:
         self.time = get_current_time() - self.start_time
@@ -47,23 +46,48 @@ class World:
                 square.obey_bounce(current_bounce)
                 changed = square.dir.copy()
                 
-                # Add the hit peg to animations
-                hit_rect = current_bounce.get_collision_rect()
-                rect_index = self.rectangles.index(hit_rect)
-                self.peg_animations[rect_index] = self.time
+                # Get the current bounce peg color and index
+                current_peg_index = len(self.past_bounces) - 1
+                if current_peg_index >= 0 and current_peg_index < len(self.colors):
+                    peg_color = self.colors[current_peg_index]
+                    
+                    # Add expanding ring particles using peg color
+                    for _ in range(Config.ring_particle_count):
+                        angle = _ * (360 / Config.ring_particle_count)  # Evenly space particles in a circle
+                        speed = random.uniform(Config.ring_particle_speed - 4, Config.ring_particle_speed + 4)
+                        dx = math.cos(math.radians(angle)) * speed
+                        dy = math.sin(math.radians(angle)) * speed
+                        new = Particle(square.pos, [0, 0], False)
+                        new.color = pygame.Color(*peg_color)
+                        new.size = random.randint(Config.bounce_particle_size_min, Config.bounce_particle_size_max)
+                        new.delta = [dx/10, dy/10]
+                        self.particles.append(new)
+                    
+                    # Add explosive burst particles with peg color
+                    for _ in range(Config.burst_particle_count):
+                        angle = random.uniform(0, 360)
+                        speed = random.uniform(Config.burst_particle_speed/2, Config.burst_particle_speed)
+                        dx = math.cos(math.radians(angle)) * speed
+                        dy = math.sin(math.radians(angle)) * speed
+                        new = Particle(square.pos, [0, 0], False)
+                        new.color = pygame.Color(*peg_color)
+                        new.size = random.randint(Config.bounce_particle_size_min, Config.bounce_particle_size_max)
+                        new.delta = [dx/10, dy/10]
+                        self.particles.append(new)
+                    
+                    # Add secondary smaller particles for more effect
+                    for _ in range(Config.burst_particle_count // 2):
+                        angle = random.uniform(0, 360)
+                        speed = random.uniform(Config.burst_particle_speed*0.7, Config.burst_particle_speed)
+                        dx = math.cos(math.radians(angle)) * speed
+                        dy = math.sin(math.radians(angle)) * speed
+                        new = Particle(square.pos, [0, 0], False)
+                        new.color = pygame.Color(*[min(255, c + 50) for c in peg_color])  # Lighter version of peg color
+                        new.size = random.randint(Config.bounce_particle_size_min//2, Config.bounce_particle_size_max//2)
+                        new.delta = [dx/10, dy/10]
+                        self.particles.append(new)
                 
-                # Get the current color index and next color
-                current_color_index = round((square.dir_x + 1) / 2 + square.dir_y + 1)
-                square_colors = get_colors()["square"]
-                next_color = square_colors[current_color_index % len(square_colors)]
-                
-                # Add color change particles
-                for _ in range(15):
-                    new = Particle(square.pos, [0, 0], False)
-                    new.color = next_color  # Use the square's new color
-                    new.delta = [random.randint(-15, 15)/10, random.randint(-15, 15)/10]
-                    self.particles.append(new)
-                
+                # Original bounce particles
                 for _ in range(2):
                     if before[_] == changed[_]:
                         changed[_] = 0
@@ -72,11 +96,15 @@ class World:
                 if Config.do_particles_on_bounce:
                     self.add_bounce_particles(square.pos, changed)
                 
-                # Add indigo hit particles
-                for _ in range(15):
+                # Add white sparkle particles
+                for _ in range(Config.sparkle_particle_count):
+                    angle = random.uniform(0, 360)
+                    speed = random.uniform(Config.sparkle_particle_speed - 5, Config.sparkle_particle_speed + 5)
                     new = Particle(square.pos, [0, 0], False)
-                    new.color = pygame.Color(75, 0, 130)  # Indigo color
-                    new.delta = [random.randint(-15, 15)/10, random.randint(-15, 15)/10]
+                    new.color = pygame.Color(255, 255, 255)  # White sparkle
+                    new.size = random.randint(Config.bounce_particle_size_min//2, Config.bounce_particle_size_max//2)
+                    new.delta = [math.cos(math.radians(angle)) * speed/10,
+                               math.sin(math.radians(angle)) * speed/10]
                     self.particles.append(new)
 
                 # stop square at end
@@ -225,39 +253,12 @@ class World:
         self.collision_times = [_fb.time for _fb in self.future_bounces]
         
         # Setting random colors for the generated pegs
-        self.colors = [random.choice([(224, 50, 50), (80, 210, 100), (230, 220, 50), (174, 170, 210), (245, 77, 247), (255, 153, 0)]) for _ in self.future_bounces]
+        self.colors = [random.choice([
+            (224, 50, 50),      # Red
+            (80, 210, 100),     # Green 
+            (230, 220, 50),     # Yellow
+            (174, 170, 210),    # Purple
+            (245, 77, 247),     # Pink
+            (255, 153, 0)       # Orange
+        ]) for _ in self.future_bounces]
         return safe_areas
-
-    def draw(self, screen: pygame.Surface):
-        # Draw rectangles with animations
-        for i, rect in enumerate(self.rectangles):
-            if i in self.peg_animations:
-                # Calculate animation progress
-                time_since_hit = self.time - self.peg_animations[i]
-                if time_since_hit > self.peg_glow_duration:
-                    del self.peg_animations[i]
-                    continue
-                    
-                # Animation curve (0 to 1 to 0)
-                progress = 1 - abs(time_since_hit / (self.peg_glow_duration/2) - 1)
-                
-                # Scale the rectangle
-                scale_factor = 1 + (progress * 0.3)  # Max 30% bigger
-                scaled_rect = rect.copy()
-                scaled_rect.inflate_ip(
-                    rect.width * (scale_factor - 1),
-                    rect.height * (scale_factor - 1)
-                )
-                
-                # Draw glow effect
-                glow_color = self.colors[i]
-                glow_surf = pygame.Surface((scaled_rect.width + 20, scaled_rect.height + 20), pygame.SRCALPHA)
-                pygame.draw.rect(glow_surf, (*glow_color, int(255 * progress * 0.7)), 
-                               glow_surf.get_rect().inflate(-10, -10), border_radius=4)
-                screen.blit(glow_surf, scaled_rect.move(-10, -10))
-                
-                # Draw the peg
-                pygame.draw.rect(screen, self.colors[i], scaled_rect)
-            else:
-                # Draw normal peg
-                pygame.draw.rect(screen, self.colors[i], rect)

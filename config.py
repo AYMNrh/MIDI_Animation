@@ -145,10 +145,10 @@ class Config:
     seed: Optional[int] = None
     camera_mode: Optional[int] = 2
     start_playing_delay = 3000
-    max_notes: Optional[int] = 1000
+    max_notes: Optional[int] = 1200
     bounce_min_spacing: Optional[float] = 30
     square_speed: Optional[int] = 700
-    volume: Optional[int] = 70
+    volume: Optional[int] = 80
     music_offset: Optional[int] = 0
     direction_change_chance: Optional[int] = 30
     hp_drain_rate = 10
@@ -207,6 +207,16 @@ class Config:
 
     # Add at the top of Config class
     USE_FILE_CONFIG = True  # When True, ignores settings.json and uses values directly from this file
+
+    # Particle effect settings
+    bounce_particle_size_min = 5
+    bounce_particle_size_max = 20
+    ring_particle_count = 12      # Number of particles in the expanding ring
+    burst_particle_count = 15     # Number of particles in the burst
+    sparkle_particle_count = 10    # Number of white sparkle particles
+    ring_particle_speed = 12      # Base speed for ring particles
+    burst_particle_speed = 25     # Max speed for burst particles
+    sparkle_particle_speed = 15  # Base speed for sparkle particles
 
 
 def get_colors():
